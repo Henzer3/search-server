@@ -1,5 +1,5 @@
 # Soon
-A full-fledged authorization and frontend microservice will appear in the near future
+A full-fledged authorization microservice and frontend will appear in the near future
 
 # XKCD Search Service
 
