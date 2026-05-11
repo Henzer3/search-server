@@ -1,6 +1,3 @@
-# Soon
-A full-fledged authorization microservice and frontend will appear in the near future
-
 # XKCD Search Service
 
 Search and indexing service for XKCD comics with database-backed search, in-memory index search, JWT-protected critical operations, event-driven index synchronization through NATS, and metrics exposure for monitoring.
