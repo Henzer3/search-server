@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log/slog"
 
 	"yadro.com/course/search/core"
@@ -90,4 +92,20 @@ func (db *DB) CreateIndex() ([]core.WordInformation, error) {
 		wordsInfo = append(wordsInfo, core.WordInformation{Word: v.Word, ID: v.ID, Url: v.Url})
 	}
 	return wordsInfo, nil
+}
+
+func (db *DB) GetComics(ctx context.Context, id int) (core.ImageInformation, error) {
+	var res imageInformation
+
+	if err := db.conn.GetContext(ctx, &res, `
+	SELECT num, img_url FROM comics
+	WHERE num = $1
+	`, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return core.ImageInformation{}, core.ErrComicsNotExist
+		}
+		db.log.Error("cant GetComics in db")
+		return core.ImageInformation{}, err
+	}
+	return core.ImageInformation{ID: res.ID, Url: res.Url}, nil
 }

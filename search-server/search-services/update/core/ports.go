@@ -4,6 +4,8 @@ import (
 	"context"
 )
 
+//go:generate go run go.uber.org/mock/mockgen -source=ports.go -destination=mocks/mock.go -package=mocks
+
 type Updater interface {
 	Update(context.Context) error
 	Stats(context.Context) (ServiceStats, error)

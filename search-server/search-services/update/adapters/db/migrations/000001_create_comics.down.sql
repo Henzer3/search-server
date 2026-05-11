@@ -1,4 +1,4 @@
 DROP INDEX IF EXISTS idx_words_num;
 DROP INDEX IF EXISTS idx_words_word;
-DROP TABLE IF EXIST words;
+DROP TABLE IF EXISTS words;
 DROP TABLE IF EXISTS comics;

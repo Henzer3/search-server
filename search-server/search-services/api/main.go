@@ -10,10 +10,11 @@ import (
 	"os/signal"
 	"time"
 
-	"yadro.com/course/api/adapters/aaa"
+	"yadro.com/course/api/adapters/folders"
 	"yadro.com/course/api/adapters/rest"
 	"yadro.com/course/api/adapters/rest/middleware"
 	"yadro.com/course/api/adapters/search"
+	"yadro.com/course/api/adapters/sso"
 	"yadro.com/course/api/adapters/update"
 	"yadro.com/course/api/adapters/words"
 	"yadro.com/course/api/config"
@@ -69,22 +70,45 @@ func main() {
 		}
 	}()
 
-	verifier, err := aaa.New(log, cfg.TokenTTL)
+	ssoClient, err := sso.NewClient(cfg.SSOAdress, log)
 	if err != nil {
-		log.Error("creating verifier error", "err", err)
+		log.Error("cannot init sso client", "error", err)
 		return
 	}
+	defer func() {
+		if err := ssoClient.Close(); err != nil {
+			log.Error("close empty conn")
+		}
+	}()
+
+	folderClient, err := folders.NewClient(cfg.FoldersAddress, log)
+	if err != nil {
+		log.Error("cannot init folder client", "error", err)
+		return
+	}
+	defer func() {
+		if err := ssoClient.Close(); err != nil {
+			log.Error("close empty conn")
+		}
+	}()
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /api/db/update", middleware.Metrics(middleware.Auth(rest.NewUpdateHandler(log, updateClient), verifier)))
+	mux.Handle("POST /api/db/update", middleware.Metrics(middleware.AdminAuth(rest.NewUpdateHandler(log, updateClient), ssoClient)))
 	mux.Handle("GET /api/db/stats", middleware.Metrics(rest.NewUpdateStatsHandler(log, updateClient)))
 	mux.Handle("GET /api/db/status", middleware.Metrics(rest.NewUpdateStatusHandler(log, updateClient)))
-	mux.Handle("DELETE /api/db", middleware.Metrics(middleware.Auth(rest.NewDropHandler(log, updateClient), verifier)))
+	mux.Handle("DELETE /api/db", middleware.Metrics(middleware.AdminAuth(rest.NewDropHandler(log, updateClient), ssoClient)))
 	mux.Handle("GET /api/ping", middleware.Metrics(rest.NewPingHandler(log, map[string]core.Pinger{"words": wordsClient, "update": updateClient, "search": searchClient})))
 	mux.Handle("GET /api/search", middleware.Metrics(middleware.Concurrency(rest.NewSearchHandler(log, searchClient), cfg.SearchConcurrency)))
 	mux.Handle("GET /api/isearch", middleware.Metrics(middleware.Rate(rest.NewISearchHandler(log, searchClient), cfg.SearchRate)))
-	mux.Handle("POST /api/login", middleware.Metrics(rest.NewLoginHandler(log, verifier)))
+	mux.Handle("POST /api/login", middleware.Metrics(rest.NewLoginHandler(log, ssoClient, int32(cfg.AppID))))
+	mux.Handle("POST /api/register", middleware.Metrics(rest.NewRegisterHandler(log, ssoClient)))
 	mux.Handle("GET /metrics", rest.NewMetricsHandler())
+	mux.Handle("POST /api/folders", middleware.Auth(rest.NewCreateFolderHandler(log, folderClient), ssoClient))
+	mux.Handle("DELETE /api/folders/{folder_id}", middleware.Auth(rest.NewDeleteFolderHandler(log, folderClient), ssoClient))
+	mux.Handle("POST /api/folders/{folder_id}/{comic_id}", middleware.Auth(rest.NewAddComicHandler(log, folderClient), ssoClient))
+	mux.Handle("DELETE /api/folders/{folder_id}/{comic_id}", middleware.Auth(rest.NewDeleteComicHandler(log, folderClient), ssoClient))
+	mux.Handle("GET /api/folders", middleware.Auth(rest.NewListFoldersHandler(log, folderClient), ssoClient))
+	mux.Handle("GET /api/folders/{folder_id}/comics", middleware.Auth(rest.NewListComicsHandler(log, folderClient), ssoClient))
 
 	server := http.Server{
 		Addr:        cfg.HTTPConfig.Address,

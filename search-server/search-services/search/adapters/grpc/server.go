@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"google.golang.org/grpc/codes"
@@ -54,4 +55,16 @@ func (s *Server) search(ctx context.Context, phrase string, limit int, search fu
 		images = append(images, &searchpb.Image{Id: int64(v.ID), Url: v.Url})
 	}
 	return &searchpb.SearchReply{Images: images}, nil
+}
+
+func (s *Server) GetComics(ctx context.Context, in *searchpb.GetComicsRequest) (*searchpb.GetComicsResponse, error) {
+	url, err := s.service.GetComics(ctx, int(in.GetComicsId()))
+	if err != nil {
+		if errors.Is(err, core.ErrComicsNotExist) {
+			return nil, status.Error(codes.NotFound, "cant found comics")
+		}
+		s.log.Error("cant GetComics in grpc", "err", err)
+		return nil, status.Error(codes.Internal, "Internal error")
+	}
+	return &searchpb.GetComicsResponse{ComicsId: in.ComicsId, Url: url}, nil
 }

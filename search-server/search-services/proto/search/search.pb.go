@@ -170,6 +170,102 @@ func (x *SearchReply) GetImages() []*Image {
 	return nil
 }
 
+type GetComicsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ComicsId      int64                  `protobuf:"varint,1,opt,name=comics_id,json=comicsId,proto3" json:"comics_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetComicsRequest) Reset() {
+	*x = GetComicsRequest{}
+	mi := &file_proto_search_search_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetComicsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetComicsRequest) ProtoMessage() {}
+
+func (x *GetComicsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_search_search_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetComicsRequest.ProtoReflect.Descriptor instead.
+func (*GetComicsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_search_search_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetComicsRequest) GetComicsId() int64 {
+	if x != nil {
+		return x.ComicsId
+	}
+	return 0
+}
+
+type GetComicsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ComicsId      int64                  `protobuf:"varint,1,opt,name=comics_id,json=comicsId,proto3" json:"comics_id,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetComicsResponse) Reset() {
+	*x = GetComicsResponse{}
+	mi := &file_proto_search_search_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetComicsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetComicsResponse) ProtoMessage() {}
+
+func (x *GetComicsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_search_search_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetComicsResponse.ProtoReflect.Descriptor instead.
+func (*GetComicsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_search_search_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetComicsResponse) GetComicsId() int64 {
+	if x != nil {
+		return x.ComicsId
+	}
+	return 0
+}
+
+func (x *GetComicsResponse) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
 var File_proto_search_search_proto protoreflect.FileDescriptor
 
 const file_proto_search_search_proto_rawDesc = "" +
@@ -182,11 +278,17 @@ const file_proto_search_search_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\"4\n" +
 	"\vSearchReply\x12%\n" +
-	"\x06images\x18\x01 \x03(\v2\r.search.ImageR\x06images2\xb3\x01\n" +
+	"\x06images\x18\x01 \x03(\v2\r.search.ImageR\x06images\"/\n" +
+	"\x10GetComicsRequest\x12\x1b\n" +
+	"\tcomics_id\x18\x01 \x01(\x03R\bcomicsId\"B\n" +
+	"\x11GetComicsResponse\x12\x1b\n" +
+	"\tcomics_id\x18\x01 \x01(\x03R\bcomicsId\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url2\xf5\x01\n" +
 	"\x06Search\x128\n" +
 	"\x04Ping\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x00\x126\n" +
 	"\x06Search\x12\x15.search.SearchRequest\x1a\x13.search.SearchReply\"\x00\x127\n" +
-	"\aISearch\x12\x15.search.SearchRequest\x1a\x13.search.SearchReply\"\x00B\x1fZ\x1dyadro.com/course/proto/searchb\x06proto3"
+	"\aISearch\x12\x15.search.SearchRequest\x1a\x13.search.SearchReply\"\x00\x12@\n" +
+	"\tGetComics\x12\x18.search.GetComicsRequest\x1a\x19.search.GetComicsResponseB\x1fZ\x1dyadro.com/course/proto/searchb\x06proto3"
 
 var (
 	file_proto_search_search_proto_rawDescOnce sync.Once
@@ -200,23 +302,27 @@ func file_proto_search_search_proto_rawDescGZIP() []byte {
 	return file_proto_search_search_proto_rawDescData
 }
 
-var file_proto_search_search_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_proto_search_search_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_proto_search_search_proto_goTypes = []any{
-	(*SearchRequest)(nil), // 0: search.SearchRequest
-	(*Image)(nil),         // 1: search.Image
-	(*SearchReply)(nil),   // 2: search.SearchReply
-	(*emptypb.Empty)(nil), // 3: google.protobuf.Empty
+	(*SearchRequest)(nil),     // 0: search.SearchRequest
+	(*Image)(nil),             // 1: search.Image
+	(*SearchReply)(nil),       // 2: search.SearchReply
+	(*GetComicsRequest)(nil),  // 3: search.GetComicsRequest
+	(*GetComicsResponse)(nil), // 4: search.GetComicsResponse
+	(*emptypb.Empty)(nil),     // 5: google.protobuf.Empty
 }
 var file_proto_search_search_proto_depIdxs = []int32{
 	1, // 0: search.SearchReply.images:type_name -> search.Image
-	3, // 1: search.Search.Ping:input_type -> google.protobuf.Empty
+	5, // 1: search.Search.Ping:input_type -> google.protobuf.Empty
 	0, // 2: search.Search.Search:input_type -> search.SearchRequest
 	0, // 3: search.Search.ISearch:input_type -> search.SearchRequest
-	3, // 4: search.Search.Ping:output_type -> google.protobuf.Empty
-	2, // 5: search.Search.Search:output_type -> search.SearchReply
-	2, // 6: search.Search.ISearch:output_type -> search.SearchReply
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
+	3, // 4: search.Search.GetComics:input_type -> search.GetComicsRequest
+	5, // 5: search.Search.Ping:output_type -> google.protobuf.Empty
+	2, // 6: search.Search.Search:output_type -> search.SearchReply
+	2, // 7: search.Search.ISearch:output_type -> search.SearchReply
+	4, // 8: search.Search.GetComics:output_type -> search.GetComicsResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -233,7 +339,7 @@ func file_proto_search_search_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_search_search_proto_rawDesc), len(file_proto_search_search_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package folders;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "yadro.com/course/proto/folders";
+
+service Folders {
+  rpc CreateFolder (CreateFolderRequest) returns (CreateFolderResponse);
+  rpc DeleteFolder (DeleteFolderRequest) returns (google.protobuf.Empty);
+  rpc AddComics (AddComicsRequest) returns (google.protobuf.Empty);
+  rpc DeleteComics (DeleteComicsRequest) returns (google.protobuf.Empty);
+  rpc ListComics (ListComicsRequest) returns (ListComicsResponse);
+  rpc ListFolders(ListFoldersRequest) returns (ListFoldersResponse);
+}
+
+message CreateFolderRequest {
+  int64 user_id = 1;
+  string name = 2;
+}
+
+message CreateFolderResponse {
+  int64 folder_id = 1;
+}
+
+message DeleteFolderRequest {
+  int64 user_id = 1;
+  int64 folder_id = 2;
+}
+
+message AddComicsRequest {
+  int64 user_id = 1;
+  int64 folder_id = 2;
+  int64 comics_id = 3;
+}
+
+message DeleteComicsRequest {
+  int64 user_id = 1;
+  int64 folder_id = 2;
+  int64 comics_id = 3;
+}
+
+message ListComicsRequest {
+  int64 user_id = 1;
+  int64 folder_id = 2;
+}
+
+message Comics {
+  int64 comics_id = 1;
+  string url = 2;
+}
+
+
+message ListComicsResponse {
+  repeated Comics comics = 1;
+}
+
+message ListFoldersRequest {
+  int64 user_id = 1;
+}
+
+message Folder {
+  int64 folder_id = 1;
+  string name = 2;
+}
+
+message ListFoldersResponse {
+  repeated Folder folders = 1;
+}

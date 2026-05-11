@@ -46,7 +46,11 @@ func (c Client) Ping(ctx context.Context) error {
 }
 
 func (c Client) Status(ctx context.Context) (core.UpdateStatus, error) {
-	statusReply, _ := c.client.Status(ctx, &emptypb.Empty{})
+	statusReply, err := c.client.Status(ctx, &emptypb.Empty{})
+	if err != nil {
+		c.log.Error("cant get status in updateClient", "err", err)
+		return core.StatusUpdateUnknown, err
+	}
 	var status core.UpdateStatus
 	switch statusReply.Status {
 	case updatepb.Status_STATUS_IDLE:

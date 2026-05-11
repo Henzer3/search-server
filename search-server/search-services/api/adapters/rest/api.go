@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/VictoriaMetrics/metrics"
@@ -51,6 +52,19 @@ type SearchResponse struct {
 type UserData struct {
 	User     string `json:"name"`
 	Password string `json:"password"`
+}
+
+type CreateFolderRequest struct {
+	Name string `json:"name"`
+}
+
+type Folder struct {
+	FolderId int    `json:"folder_id"`
+	Name     string `json:"name"`
+}
+
+type ListFolderResponse struct {
+	Folders []Folder `json:"folders"`
 }
 
 func NewWordsHandler(log *slog.Logger, norm core.Normalizer) http.HandlerFunc {
@@ -223,7 +237,7 @@ func newSearchHandler(log *slog.Logger, searchFunc func(ctx context.Context, phr
 	}
 }
 
-func NewLoginHandler(log *slog.Logger, auth core.Authenticator) http.HandlerFunc {
+func NewLoginHandler(log *slog.Logger, auth core.Authenticator, appID int32) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var userData UserData
 		defer func() {
@@ -236,9 +250,10 @@ func NewLoginHandler(log *slog.Logger, auth core.Authenticator) http.HandlerFunc
 			http.Error(w, "bad request", http.StatusBadRequest)
 			return
 		}
-		token, err := auth.Login(userData.User, userData.Password)
+		token, err := auth.Login(r.Context(), core.LoginRequest{Email: userData.User, Password: userData.Password, AppId: appID})
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		if _, err := w.Write(token); err != nil {
@@ -247,8 +262,266 @@ func NewLoginHandler(log *slog.Logger, auth core.Authenticator) http.HandlerFunc
 	}
 }
 
+func NewRegisterHandler(log *slog.Logger, auth core.Authenticator) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var userData UserData
+		defer func() {
+			if err := r.Body.Close(); err != nil {
+				log.Error("cant close r.Body in NewLoginHandler", "err", err)
+			}
+		}()
+		if err := json.NewDecoder(r.Body).Decode(&userData); err != nil {
+			log.Error("cant decode user data", "err", err)
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		_, err := auth.Register(r.Context(), userData.User, userData.Password)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+	}
+}
+
 func NewMetricsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metrics.WritePrometheus(w, true)
+	}
+}
+
+func NewCreateFolderHandler(log *slog.Logger, folder core.Folderer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req CreateFolderRequest
+		defer func() {
+			if err := r.Body.Close(); err != nil {
+				log.Error("cant close r.Body in NewLoginHandler", "err", err)
+			}
+		}()
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			log.Error("cant decode user data", "err", err)
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		if strings.TrimSpace(req.Name) == "" {
+			http.Error(w, "name is required", http.StatusBadRequest)
+			return
+		}
+
+		user, ok := core.UserFromContext(r.Context())
+		if !ok {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		id, err := folder.CreateFolder(r.Context(), user.ID, req.Name)
+		if err != nil {
+			if errors.Is(err, core.ErrAlreadyExists) {
+				http.Error(w, "already exist", http.StatusConflict)
+				return
+			}
+			log.Error("cant Create folder in handler api", "err", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		folder := Folder{FolderId: int(id), Name: req.Name}
+		w.Header().Set("Content-Type", "application/json")
+
+		if err := json.NewEncoder(w).Encode(&folder); err != nil {
+			log.Error("error during encode json in NewCreateHandlerHandler", "err", err)
+		}
+
+	}
+}
+
+func NewDeleteFolderHandler(log *slog.Logger, folder core.Folderer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		folderIdStr := r.PathValue("folder_id")
+		fid, err := strconv.Atoi(folderIdStr)
+		if err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		user, ok := core.UserFromContext(r.Context())
+		if !ok {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		if err := folder.DeleteFolder(r.Context(), user.ID, int64(fid)); err != nil {
+			if errors.Is(err, core.ErrNotFound) {
+				http.Error(w, "not found", http.StatusNotFound)
+				return
+			} else if errors.Is(err, core.ErrNoPermissions) {
+				http.Error(w, "no permission", http.StatusForbidden)
+				return
+			}
+			log.Error("cant DeleteFolder in handler", "err", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func NewAddComicHandler(log *slog.Logger, folder core.Folderer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		folderIdStr := r.PathValue("folder_id")
+		fid, err := strconv.Atoi(folderIdStr)
+		if err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		comicIdStr := r.PathValue("comic_id")
+		cid, err := strconv.Atoi(comicIdStr)
+		if err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		user, ok := core.UserFromContext(r.Context())
+		if !ok {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		if err := folder.AddComics(r.Context(), user.ID, int64(fid), int64(cid)); err != nil {
+			switch {
+			case errors.Is(err, core.ErrNotFound):
+				http.Error(w, "not found", http.StatusNotFound)
+				return
+			case errors.Is(err, core.ErrNoPermissions):
+				http.Error(w, "no permission", http.StatusForbidden)
+				return
+			case errors.Is(err, core.ErrAlreadyExists):
+				http.Error(w, "already exist", http.StatusConflict)
+				return
+			}
+			log.Error("cant AddComic in handler", "err", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+func NewDeleteComicHandler(log *slog.Logger, folder core.Folderer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		folderIdStr := r.PathValue("folder_id")
+		fid, err := strconv.Atoi(folderIdStr)
+		if err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		comicIdStr := r.PathValue("comic_id")
+		cid, err := strconv.Atoi(comicIdStr)
+		if err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		user, ok := core.UserFromContext(r.Context())
+		if !ok {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		if err := folder.DeleteComics(r.Context(), user.ID, int64(fid), int64(cid)); err != nil {
+			if errors.Is(err, core.ErrNotFound) {
+				http.Error(w, "not found", http.StatusNotFound)
+				return
+			} else if errors.Is(err, core.ErrNoPermissions) {
+				http.Error(w, "no permission", http.StatusForbidden)
+				return
+			}
+			log.Error("cant DeleteComic in handler", "err", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func NewListFoldersHandler(log *slog.Logger, folder core.Folderer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, ok := core.UserFromContext(r.Context())
+		if !ok {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		folders, err := folder.ListFolders(r.Context(), user.ID)
+		if err != nil {
+			http.Error(w, "internal", http.StatusInternalServerError)
+			return
+		}
+
+		var res ListFolderResponse
+
+		for _, v := range folders {
+			res.Folders = append(res.Folders, Folder{FolderId: int(v.FolderID), Name: v.Name})
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		if err := json.NewEncoder(w).Encode(&res); err != nil {
+			log.Error("error during encode json in NewListFolderHandler", "err", err)
+		}
+	}
+}
+
+func NewListComicsHandler(log *slog.Logger, folder core.Folderer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		folderIdStr := r.PathValue("folder_id")
+		fid, err := strconv.Atoi(folderIdStr)
+		if err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		user, ok := core.UserFromContext(r.Context())
+		if !ok {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		comics, err := folder.ListComics(r.Context(), user.ID, int64(fid))
+
+		if err != nil {
+			if errors.Is(err, core.ErrNotFound) {
+				http.Error(w, "not found", http.StatusNotFound)
+				return
+			} else if errors.Is(err, core.ErrNoPermissions) {
+				http.Error(w, "no permission", http.StatusForbidden)
+				return
+			}
+			log.Error("cant get ListComics in handler", "err", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		newComics := make([]ComicResponse, 0, len(comics))
+		for _, v := range comics {
+			newComics = append(newComics, ComicResponse{ID: v.ID, URL: v.Url})
+		}
+
+		res := SearchResponse{
+			Comics: newComics,
+			Total:  len(comics),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(&res); err != nil {
+			log.Error("error during encode json in NewListComicsHandler", "err", err)
+		}
 	}
 }

@@ -20,7 +20,10 @@ type Config struct {
 	WordsAddress      string        `yaml:"words_address" env:"WORDS_ADDRESS" env-default:"words:81"`
 	UpdateAddress     string        `yaml:"update_address" env:"UPDATE_ADDRESS" env-default:"update:82"`
 	SearchAddress     string        `yaml:"search_address" env:"SEARCH_ADDRESS" env-default:"search:83"`
+	SSOAdress         string        `yaml:"sso_address" env:"SSO_ADDRESS" env-default:"search:83"`
+	FoldersAddress    string        `yaml:"folders_address" env:"FOLDERS_ADDRESS" env-default:"search:83"`
 	TokenTTL          time.Duration `yaml:"token_ttl" env:"TOKEN_TTL" env-default:"24h"`
+	AppID             int           `yaml:"app_id" env-required:"true"`
 }
 
 func MustLoad(configPath string) Config {

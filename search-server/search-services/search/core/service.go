@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sort"
 )
@@ -84,4 +85,16 @@ func (s *Service) RebuildIndex() error {
 
 func (s *Service) DeleteIndex() {
 	s.inMemoryRep.DeleteIndex()
+}
+
+func (s *Service) GetComics(ctx context.Context, comicsID int) (string, error) {
+	res, err := s.db.GetComics(ctx, comicsID)
+	if err != nil {
+		if errors.Is(err, ErrComicsNotExist) {
+			return "", err
+		}
+		s.log.Error("cant GetComics in core", "err", err)
+		return "", err
+	}
+	return res.Url, nil
 }

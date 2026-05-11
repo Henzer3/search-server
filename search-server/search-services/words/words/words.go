@@ -8,33 +8,30 @@ import (
 
 var wordRegex = regexp.MustCompile(`[a-zA-Z0-9]+`)
 
-func Stem(word string, stopWords bool) (string, error) {
+func Stem(word string, stopWords bool) string {
 	str := english.Stem(word, true)
 
 	if stopWords {
 		if !english.IsStopWord(str) {
-			return str, nil
+			return str
 		}
-		return "", nil
+		return ""
 	}
 
-	return str, nil
+	return str
 }
 
-func StemSlice(phrase string, stopWords bool) ([]string, error) {
-	sliseWords := wordRegex.FindAllString(phrase, -1)
-	var sliseAnswer []string
+func StemSlice(phrase string, stopWords bool) []string {
+	sliceWords := wordRegex.FindAllString(phrase, -1)
+	var sliceAnswer []string
 	set := make(map[string]struct{})
 
-	for _, v := range sliseWords {
-		str, err := Stem(v, true)
-		if err != nil {
-			return nil, err
-		}
+	for _, v := range sliceWords {
+		str := Stem(v, stopWords)
 		if _, ok := set[str]; !ok && str != "" {
 			set[str] = struct{}{}
-			sliseAnswer = append(sliseAnswer, str)
+			sliceAnswer = append(sliceAnswer, str)
 		}
 	}
-	return sliseAnswer, nil
+	return sliceAnswer
 }

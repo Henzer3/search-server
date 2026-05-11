@@ -14,17 +14,20 @@ services:
     environment:
       - ADMIN_USER=admin
       - ADMIN_PASSWORD=password
-      - TOKEN_TTL=2m
       - API_ADDRESS=:8080
       - WORDS_ADDRESS=words:8080
       - UPDATE_ADDRESS=update:8080
       - SEARCH_ADDRESS=search:8080
+      - SSO_ADDRESS=sso:8080
+      - FOLDERS_ADDRESS=folders:8080
       - SEARCH_CONCURRENCY=10
       - SEARCH_RATE=100
     depends_on:
       - words
       - update
       - search
+      - sso
+      - folders
 
   words:
     image: words:latest
@@ -65,6 +68,50 @@ services:
         condition: service_started
       nats:
         condition: service_started
+
+  sso:
+    image: sso:latest
+    build:
+      context: search-services
+      dockerfile: Dockerfile.sso
+    container_name: sso
+    restart: unless-stopped
+    ports:
+      - 28084:8080
+    volumes:
+      - ./search-services/sso/config.yaml:/config.yaml
+    environment:
+      - SSO_ADDRESS=:8080
+      - DB_ADDRESS=postgres://postgres:password@postgres:5432/postgres
+      - TOKEN_TTL=2m
+      - SSO_APP_ID=1
+      - SSO_APP_NAME=api
+      - SSO_APP_SECRET=some-secret
+
+      - SSO_ADMIN_EMAIL=admin
+      - SSO_ADMIN_PASSWORD=password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  folders:
+      image: folders:latest
+      build:
+        context: search-services
+        dockerfile: Dockerfile.folders
+      container_name: folders
+      restart: unless-stopped
+      ports:
+        - 28085:8080
+      volumes:
+        - ./search-services/sso/config.yaml:/config.yaml
+      environment:
+        - FOLDERS_ADDRESS=:8080
+        - DB_ADDRESS=postgres://postgres:password@postgres:5432/postgres
+        - SEARCH_ADDRESS=search:8080
+      depends_on:
+        postgres:
+          condition: service_healthy
 
   search:
       image: search:latest
@@ -130,7 +177,6 @@ services:
 
   nats:
     image: nats
-    container_name: nats
     ports:
       - "4222:4222"
 

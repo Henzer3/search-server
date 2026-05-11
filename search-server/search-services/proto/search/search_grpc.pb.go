@@ -20,9 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Search_Ping_FullMethodName    = "/search.Search/Ping"
-	Search_Search_FullMethodName  = "/search.Search/Search"
-	Search_ISearch_FullMethodName = "/search.Search/ISearch"
+	Search_Ping_FullMethodName      = "/search.Search/Ping"
+	Search_Search_FullMethodName    = "/search.Search/Search"
+	Search_ISearch_FullMethodName   = "/search.Search/ISearch"
+	Search_GetComics_FullMethodName = "/search.Search/GetComics"
 )
 
 // SearchClient is the client API for Search service.
@@ -32,6 +33,7 @@ type SearchClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchReply, error)
 	ISearch(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchReply, error)
+	GetComics(ctx context.Context, in *GetComicsRequest, opts ...grpc.CallOption) (*GetComicsResponse, error)
 }
 
 type searchClient struct {
@@ -72,6 +74,16 @@ func (c *searchClient) ISearch(ctx context.Context, in *SearchRequest, opts ...g
 	return out, nil
 }
 
+func (c *searchClient) GetComics(ctx context.Context, in *GetComicsRequest, opts ...grpc.CallOption) (*GetComicsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetComicsResponse)
+	err := c.cc.Invoke(ctx, Search_GetComics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SearchServer is the server API for Search service.
 // All implementations must embed UnimplementedSearchServer
 // for forward compatibility.
@@ -79,6 +91,7 @@ type SearchServer interface {
 	Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	Search(context.Context, *SearchRequest) (*SearchReply, error)
 	ISearch(context.Context, *SearchRequest) (*SearchReply, error)
+	GetComics(context.Context, *GetComicsRequest) (*GetComicsResponse, error)
 	mustEmbedUnimplementedSearchServer()
 }
 
@@ -97,6 +110,9 @@ func (UnimplementedSearchServer) Search(context.Context, *SearchRequest) (*Searc
 }
 func (UnimplementedSearchServer) ISearch(context.Context, *SearchRequest) (*SearchReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ISearch not implemented")
+}
+func (UnimplementedSearchServer) GetComics(context.Context, *GetComicsRequest) (*GetComicsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetComics not implemented")
 }
 func (UnimplementedSearchServer) mustEmbedUnimplementedSearchServer() {}
 func (UnimplementedSearchServer) testEmbeddedByValue()                {}
@@ -173,6 +189,24 @@ func _Search_ISearch_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Search_GetComics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetComicsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServer).GetComics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Search_GetComics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServer).GetComics(ctx, req.(*GetComicsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Search_ServiceDesc is the grpc.ServiceDesc for Search service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -191,6 +225,10 @@ var Search_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ISearch",
 			Handler:    _Search_ISearch_Handler,
+		},
+		{
+			MethodName: "GetComics",
+			Handler:    _Search_GetComics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

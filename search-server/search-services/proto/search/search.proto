@@ -20,8 +20,18 @@ message SearchReply {
   repeated Image images = 1;
 }
 
+message GetComicsRequest {
+  int64 comics_id = 1;
+}
+
+message GetComicsResponse {
+  int64 comics_id = 1;
+  string url = 2;
+}
+
 service Search {
   rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {}
   rpc Search(SearchRequest) returns (SearchReply) {}
   rpc ISearch(SearchRequest) returns (SearchReply) {}
+  rpc GetComics (GetComicsRequest) returns (GetComicsResponse);
 }

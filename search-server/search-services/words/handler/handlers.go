@@ -34,10 +34,6 @@ func (s *server) Norm(ctx context.Context, in *wordspb.WordsRequest) (*wordspb.W
 		return nil, err
 	}
 
-	ans, err := words.StemSlice(in.Phrase, true)
-	if err != nil {
-		s.logger.Error("too much messages", "err", err)
-		return nil, status.Error(codes.Internal, "processing failed")
-	}
+	ans := words.StemSlice(in.Phrase, true)
 	return &wordspb.WordsReply{Words: ans}, nil
 }

@@ -30,7 +30,7 @@ func (c *concurrencyLimiter) release() {
 
 func Concurrency(next http.Handler, limit int) http.Handler {
 	if limit <= 0 {
-		panic(" concurrency limit must be positive")
+		panic("concurrency limit must be positive")
 	}
 
 	cl := newLimiter(limit)

@@ -43,8 +43,6 @@ func run(cfg config.Config, log *slog.Logger) error {
 	log.Info("starting server")
 	log.Debug("debug messages are enabled")
 
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
-
 	// database adapter
 	storage, err := db.New(log, cfg.DBAddress)
 	if err != nil {
@@ -53,7 +51,7 @@ func run(cfg config.Config, log *slog.Logger) error {
 
 	defer func() {
 		if err := storage.Close(); err != nil {
-			logger.Error("close conn in database adapter", "err", err)
+			log.Error("close conn in database adapter", "err", err)
 		}
 	}()
 
@@ -74,7 +72,7 @@ func run(cfg config.Config, log *slog.Logger) error {
 	}
 	defer func() {
 		if err := words.Close(); err != nil {
-			logger.Error("close conn in words adapter", "err", err)
+			log.Error("close conn in words adapter", "err", err)
 		}
 	}()
 
@@ -98,7 +96,7 @@ func run(cfg config.Config, log *slog.Logger) error {
 	}
 
 	server := grpc.NewServer()
-	updatepb.RegisterUpdateServer(server, updategrpc.NewServer(logger, updater))
+	updatepb.RegisterUpdateServer(server, updategrpc.NewServer(log, updater))
 	reflection.Register(server)
 
 	errChan := make(chan error, 1)
@@ -127,7 +125,7 @@ func run(cfg config.Config, log *slog.Logger) error {
 	select {
 	case <-stopped:
 	case <-ctx.Done():
-		logger.Error("time is up")
+		log.Error("time is up")
 		server.Stop()
 	}
 
