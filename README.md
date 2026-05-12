@@ -40,6 +40,8 @@ The project is split into several services/components:
 - update — updates the XKCD database and publishes events
 - search — performs search and maintains the in-memory index
 - words — text processing / normalization support
+- soo - authorization, identification, authentication
+- folders - keeps pictures of user
 - NATS — event bus between services
 - PostgreSQL — source of truth
 - VictoriaMetrics + Grafana — metrics storage and visualization
